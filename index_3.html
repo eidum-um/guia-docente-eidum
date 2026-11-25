@@ -1286,6 +1286,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     modo(); renumera();
   }
   window._rellenarGuia = rellenar;   // usado en las pruebas
+
+  // ------------------------------------------------------------ altura automática dentro de un iframe
+  // Comunica la altura del contenido a la página que lo incrusta (la web de la EIDUM ajusta el iframe y no hay scroll interno)
+  if (window.parent !== window) {
+    var ultimo = 0;
+    var avisa = function () {
+      var h = Math.ceil(document.documentElement.scrollHeight);
+      if (Math.abs(h - ultimo) > 2) { ultimo = h; window.parent.postMessage({ tipo: 'eidum-altura', alto: h }, '*'); }
+    };
+    document.documentElement.style.overflowY = 'hidden';
+    if (window.ResizeObserver) new ResizeObserver(avisa).observe(document.body);
+    window.addEventListener('load', avisa); setInterval(avisa, 1000); avisa();
+  }
 })();
 </script>
 </body>
