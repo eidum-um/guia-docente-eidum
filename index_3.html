@@ -231,7 +231,7 @@
     <label class="sub" data-t="vinculacion">Vinculación</label>
     <label class="opcion linea"><input type="radio" data-k="vinculo" value="PDI"> PDI</label>
     <label class="opcion linea"><input type="radio" data-k="vinculo" value="PTGAS"> PTGAS</label>
-    <label class="opcion linea"><input type="radio" data-k="vinculo" value="Externo"> <span data-t="externo">Externo (jubilados u otros)</span></label>
+    <label class="opcion linea"><input type="radio" data-k="vinculo" value="Externo"> <span data-t="externo">Personal externo (personal jubilado u otro)</span></label>
     <label class="sub" data-t="horas">Número de horas impartidas de clase</label>
     <div class="rejilla">
       <div><label class="sub" style="margin-top:0" data-t="hSinc">On-line síncronas</label><input type="number" min="0" step="0.5" value="0" data-k="hSinc" data-req></div>
@@ -521,7 +521,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       bloque(p);
     });
     blank();
-    B.push({ k: 'p', proto: 'nota', runs: [R('*NOTA: para el pago a Profesores Extranjeros deberán aportarnos una fotocopia del NIE o pasaporte, dirección en su país y certificado de titularidad de la cuenta bancaria.')] });
+    B.push({ k: 'p', proto: 'nota', runs: [R('*NOTA: para el pago al profesorado extranjero deberán aportarnos una fotocopia del NIE o pasaporte, dirección en su país y certificado de titularidad de la cuenta bancaria.')] });
     return B;
   }
 
@@ -608,7 +608,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           return P.vinculo.replace(/<w:sdt>[\s\S]*?<\/w:sdt>/g, function (sdt) {
             var marcar = n++ === b.marcado;
             return marcar ? sdt.replace('<w14:checked/>', '<w14:checked w14:val="1"/>').replace('<w:t>☐</w:t>', '<w:t>☒</w:t>') : sdt;
-          }).replace(/ w14:paraId="[^"]*"| w14:textId="[^"]*"/g, '');
+          }).replace(/ w14:paraId="[^"]*"| w14:textId="[^"]*"/g, '')
+            .replace('>Externo (jubilados u otros)<', '>Personal externo (personal jubilado u otro)<');   // lenguaje inclusivo
         }
         case 'codigo': case 'titulo': {
           var p = P[b.k], pPr = pPrDe(p), rp = (p.match(/<w:r>[\s\S]*?<\/w:r>|<w:r [^>]*>[\s\S]*?<\/w:r>/g) || []);
@@ -782,7 +783,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         case 'blank': { var hb = tipo === 'ge' ? 14.3 : BLANK; cabe(hb); y += hb; return; }
         case 'h': {
           // el encabezado no se queda solo al final de la página
-          cabe(14.3 + 2.5 + 10 + (sig && sig.proto === 'des0' ? 29 : 16));
+          var sigue = 16;
+          if (sig && sig.proto === 'des0') sigue = 29;
+          if (sig && sig.k === 'check') { sigue = 0; for (var q = i + 1; B[q] && B[q].k === 'check'; q++) sigue += 14.3 * (tipo === 'en' ? 1.15 : 1); }
+          cabe(14.3 + 2.5 + 10 + sigue);
           var base = y + 11 * ASC;
           page.drawText(b.text, { x: 72, y: Y(base), size: 11, font: F.b, color: rgb(GRIS) });
           page.drawLine({ start: { x: 72, y: Y(y + 16.05) }, end: { x: 523.2, y: Y(y + 16.05) }, thickness: 1.5, color: PDFLib.rgb(0x7f / 255, 0x7f / 255, 0x7f / 255) });
@@ -800,6 +804,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           return;
         }
         case 'check': {
+          // las casillas de los trimestres van siempre juntas en la misma página
+          if (!B[i - 1] || B[i - 1].k !== 'check') { var nck = 0; for (var j = i; B[j] && B[j].k === 'check'; j++) nck++; cabe(nck * 14.3 * (tipo === 'en' ? 1.15 : 1)); }
           var a = altoLinea([], 11); cabe(a.h);
           var bx = tipo === 'en' ? 107.4 : 108.1;
           var bw = caja(bx, y + a.asc, 11, b.checked);
@@ -810,7 +816,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           var a2 = altoLinea([], 11); cabe(a2.h);
           var base2 = y + a2.asc;
           page.drawText('•', { x: 90.1, y: Y(base2), size: 11, font: F.r, color: rgb(NEGRO) });
-          [[108.1, 'PDI'], [178.3, ' PTGAS'], [284.5, ' Externo (jubilados u otros)']].forEach(function (c, k) {
+          [[108.1, 'PDI'], [178.3, ' PTGAS'], [284.5, ' Personal externo (personal jubilado u otro)']].forEach(function (c, k) {
             var cw = caja(c[0], base2, 11, b.marcado === k);
             page.drawText(c[1], { x: c[0] + cw, y: Y(base2), size: 11, font: F.r, color: rgb(NEGRO) });
           });
@@ -917,7 +923,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     guardar: 'Save data to a file', cargar: 'Load saved data',
     ayudaGuardar: 'You can save what you have written and resume it later or reuse it in another edition. If it includes the financial management data, the file contains personal data (ID, bank account): keep it safe.',
     nombre: 'First name', apellidos: 'Surnames', email: 'Email', dni: 'ID card / NIE / passport', vinculacion: 'Relationship with the University',
-    externo: 'External (retired or other)', horas: 'Number of teaching hours', hSinc: 'Online synchronous', hAsinc: 'Online asynchronous', hPres: 'On-site',
+    externo: 'External staff (retired staff or other)', horas: 'Number of teaching hours', hSinc: 'Online synchronous', hAsinc: 'Online asynchronous', hPres: 'On-site',
     ayudaExterno: 'Staff from outside the University of Murcia: in addition to these data, a bank account ownership certificate must be attached.',
     direccion: 'Postal address', cuenta: 'Bank account number (IBAN)',
     fecha: 'Date', inicio: 'Start time', fin: 'End time', desarrollo: 'Session content', desarrolloEn: 'Session content in English', unTema: 'One topic per line',
